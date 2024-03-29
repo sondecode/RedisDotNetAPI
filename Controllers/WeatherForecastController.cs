@@ -1,4 +1,5 @@
 using DemoRedis.Attributes;
+using DemoRedis.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DemoRedis.Controllers
@@ -7,6 +8,7 @@ namespace DemoRedis.Controllers
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
     {
+        private IResponseCacheService _responseCacheService;
         private static readonly string[] Summaries = new[]
         {
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -14,14 +16,15 @@ namespace DemoRedis.Controllers
 
         private readonly ILogger<WeatherForecastController> _logger;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger, IResponseCacheService responseCacheService)
         {
             _logger = logger;
+            _responseCacheService = responseCacheService;
         }
 
-        [HttpGet(Name = "GetWeatherForecast")]
+        [HttpGet("getall")]
         [Cache(1000)]
-        public async Task<IActionResult> GetAsync()
+        public async Task<IActionResult> GetAsync(int PageNumber, int PageSize)
         {
             var result = Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {
@@ -32,6 +35,13 @@ namespace DemoRedis.Controllers
             .ToArray();
 
             return Ok(result);
+        }
+
+        [HttpGet("create")]
+        public async Task<IActionResult> Create()
+        {
+            await _responseCacheService.RemoveCacheResponseAsync("/WeatherForecast/getall");
+            return Ok();
         }
     }
 }
